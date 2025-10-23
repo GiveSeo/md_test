@@ -1,0 +1,35 @@
+name: Merge Wiki Markdown Files to Main Repo
+
+on:
+  workflow_dispatch:  # ✅ 수동 실행 전용 (Actions 탭에서 직접 실행 가능)
+
+jobs:
+  merge_wiki:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@v4
+
+      - name: Clone wiki repository
+        run: |
+          git clone https://github.com/${{ github.repository }}.wiki.git wiki
+
+      - name: Merge all wiki markdown files
+        run: |
+          echo "# 📘 Combined Wiki Documents" > wiki_combined.md
+          echo "" >> wiki_combined.md
+          for file in $(find wiki -name "*.md" | sort); do
+            echo "## $(basename "$file" .md)" >> wiki_combined.md
+            echo "" >> wiki_combined.md
+            cat "$file" >> wiki_combined.md
+            echo -e "\n---\n" >> wiki_combined.md
+          done
+
+      - name: Commit and push merged file to main repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add wiki_combined.md
+          git commit -m "Manual update: merged Wiki markdowns" || echo "No changes to commit"
+          git push
